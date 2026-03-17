@@ -28,8 +28,23 @@ Task* Scheduler::getTaskById(size_t id)
     return nullptr;
 }
 
+void Scheduler::addInterrupt(size_t time, std::function<void()> handler)
+{
+    interrupts_[time].push_back(handler);
+}
+
 void Scheduler::tick()
 {
+    if (interrupts_.count(current_time_))
+    {
+        for (auto& handler : interrupts_[current_time_])
+        {
+            handler();
+        }
+    }
+
+    current_time_++;
+
     if (ready_queue_.empty())
         return;
 
