@@ -6,7 +6,11 @@ include( ${PROJECT_SOURCE_DIR}/src/src.cmake )
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(${PROJECT_NAME})
+add_executable(${PROJECT_NAME}
+        src/schedular/schedular.cpp
+        src/semaphore/semaphore.hpp
+        src/semaphore/semaphore.cpp
+)
 
 target_sources(${PROJECT_NAME}
         PRIVATE
