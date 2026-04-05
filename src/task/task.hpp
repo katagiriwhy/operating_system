@@ -19,12 +19,16 @@ struct Task final {
 
     int required_resource{-1};
 
+    bool resource_acquired{false};
+
     State state{State::READY};
 };
 
 struct Compare final {
     bool operator()(const Task* a, const Task* b) const {
-        return a->deadline > b->deadline;
+        if (a->deadline != b->deadline)
+            return a->deadline > b->deadline;
+        return a->id > b->id;
     }
 };
 

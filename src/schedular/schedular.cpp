@@ -2,7 +2,7 @@
 
 void Scheduler::addTask(Task task)
 {
-    if (tasks_.size() >= 32)
+    if (tasks_.size() >= kMaxTasks)
         return;
 
     tasks_.push_back(task);
@@ -13,10 +13,18 @@ void Scheduler::addTask(Task task)
 
 void Scheduler::addSemaphore(int count)
 {
-    if (semaphores_.size() >= 16)
+    if (semaphores_.size() >= kMaxResources)
         return;
 
     semaphores_.emplace_back(count);
+}
+
+std::optional<State> Scheduler::task_state(std::size_t id) const
+{
+    for (const auto& t : tasks_)
+        if (t.id == id)
+            return t.state;
+    return std::nullopt;
 }
 
 Task* Scheduler::getTaskById(size_t id)
@@ -58,12 +66,16 @@ void Scheduler::tick()
 
     if (task->required_resource != -1)
     {
-        auto& sem = semaphores_[task->required_resource];
+        auto& sem = semaphores_[static_cast<std::size_t>(task->required_resource)];
 
-        if (!sem.try_acquire(task->id))
+        if (!task->resource_acquired)
         {
-            task->state = State::BLOCKED;
-            return;
+            if (!sem.try_acquire(task->id))
+            {
+                task->state = State::BLOCKED;
+                return;
+            }
+            task->resource_acquired = true;
         }
     }
 
@@ -75,7 +87,11 @@ void Scheduler::tick()
 
         if (task->required_resource != -1)
         {
-            auto& sem = semaphores_[task->required_resource];
+            auto& sem = semaphores_[static_cast<std::size_t>(task->required_resource)];
+
+            task->resource_acquired = false;
+
+            sem.release();
 
             if (!sem.waiting().empty())
             {
@@ -88,10 +104,6 @@ void Scheduler::tick()
                     next->state = State::READY;
                     ready_queue_.push(next);
                 }
-            }
-            else
-            {
-                sem.release();
             }
         }
 
